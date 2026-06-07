@@ -16,18 +16,24 @@ class LockedIn extends Phaser.Scene {
     create() {
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
-        this.map = this.add.tilemap("platformer-level-1", 18, 18, 45, 25);
+        this.map = this.add.tilemap("Level-1", 18, 18, 45, 25);
 
         // Add a tileset to the map
         // First parameter: name we gave the tileset in Tiled
         // Second parameter: key for the tilesheet (from this.load.image in Load.js)
-        this.tileset = this.map.addTilesetImage("kenny_tilemap_packed", "tilemap_tiles");
+        this.tileset = this.map.addTilesetImage("tilemap_packed", "tilemap_tiles");
+        this.tileset2 = this.map.addTilesetImage("stone_packed", "tilemap_stone");
 
         // Create a layer
-        this.groundLayer = this.map.createLayer("Ground-n-Platforms", this.tileset, 0, 0);
+        this.pixelLayer = this.map.createLayer("Blocks", this.tileset2, 0, 0);
+        this.groundLayer = this.map.createLayer("Pixel-packed", this.tileset, 0, 0);
 
         // Make it collidable
         this.groundLayer.setCollisionByProperty({
+            collides: true
+        });
+
+        this.pixelLayer.setCollisionByProperty({
             collides: true
         });
 
@@ -50,11 +56,12 @@ class LockedIn extends Phaser.Scene {
         
 
         // set up player avatar
-        my.sprite.player = this.physics.add.sprite(30, 345, "platformer_characters", "tile_0000.png");
+        my.sprite.player = this.physics.add.sprite(30, 200, "platformer_characters", "tile_0000.png");
         my.sprite.player.setCollideWorldBounds(true);
 
         // Enable collision handling
         this.physics.add.collider(my.sprite.player, this.groundLayer);
+        this.physics.add.collider(my.sprite.player, this.pixelLayer);
 
         // TODO: Add coin collision handler
         // Handle collision detection with coins

@@ -1,0 +1,50 @@
+{
+    "activeFile": "Level-1.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "#colored-transparent_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 149.33333333333331,
+                "y": 180.33333333333334
+            }
+        },
+        "Level-1.tmx#industrial_tilemap_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmx#stone_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmx#tilemap_packed": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/caden/Documents/CMPM 120/Locked-In/assets",
+    "last.imagePath": "C:/Users/caden/Documents/CMPM 120/Locked-In/assets",
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 18,
+    "map.tileWidth": 18,
+    "openFiles": [
+        "Level-1.tmx"
+    ],
+    "project": "Level-1.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "Level-1.tmx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.tileSize": {
+        "height": 18,
+        "width": 18
+    }
+}
