@@ -10,7 +10,7 @@ class LockedIn extends Phaser.Scene {
         this.physics.world.gravity.y = 1500;
         this.JUMP_VELOCITY = -600;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 2.0;
+        this.SCALE = 3;
     }
 
     create() {
@@ -28,11 +28,15 @@ class LockedIn extends Phaser.Scene {
         this.tileset5 = this.map.addTilesetImage("farm_tilemap_packed", "tilemap_farm");
 
         // Create a layer
+        this.firstKey = this.map.createLayer("key1", this.tileset, 0, 0);
+        this.firstKeyHole = this.map.createLayer("keyhole1", this.tileset, 0, 0);
         this.pixelLayer = this.map.createLayer("Blocks", this.tileset2, 0, 0);
         this.groundLayer = this.map.createLayer("Pixel-packed", this.tileset, 0, 0);
+        this.uncollidableindustrialLayer = this.map.createLayer("uncolliable industrial", this.tileset3, 0, 0);
         this.industrialLayer = this.map.createLayer("Industrial", this.tileset3, 0, 0);
         this.foodLayer = this.map.createLayer("Food", this.tileset4, 0, 0);
         this.farmLayer = this.map.createLayer("Farm", this.tileset5, 0, 0);
+        this.uncollidableLayer = this.map.createLayer("uncollidable pixel-packed", this.tileset, 0, 0);
 
         // Make it collidable
         this.groundLayer.setCollisionByProperty({
@@ -55,23 +59,9 @@ class LockedIn extends Phaser.Scene {
             collides: true
         });
 
-        // TODO: Add createFromObjects here
-        this.coins = this.map.createFromObjects("Objects", {
-            name: "coin",
-            key: "tilemap_sheet",
-            frame: 151
+        this.firstKeyHole.setCollisionByProperty({
+            collides: true
         });
-        
-
-        // TODO: Add turn into Arcade Physics here
-        // Since createFromObjects returns an array of regular Sprites, we need to convert 
-        // them into Arcade Physics sprites (STATIC_BODY, so they don't move) 
-        this.physics.world.enable(this.coins, Phaser.Physics.Arcade.STATIC_BODY);
-
-        // Create a Phaser group out of the array this.coins
-        // This will be used for collision detection below.
-        this.coinGroup = this.add.group(this.coins);
-        
 
         // set up player avatar
         my.sprite.player = this.physics.add.sprite(30, 200, "platformer_characters", "tile_0000.png");
@@ -84,13 +74,7 @@ class LockedIn extends Phaser.Scene {
         this.physics.add.collider(my.sprite.player, this.foodLayer);
         this.physics.add.collider(my.sprite.player, this.farmLayer);
 
-        // TODO: Add coin collision handler
-        // Handle collision detection with coins
-        this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
-            obj2.destroy(); // remove coin on overlap
-        });
         
-
         // set up Phaser-provided cursor key input
         cursors = this.input.keyboard.createCursorKeys();
 
@@ -121,6 +105,26 @@ class LockedIn extends Phaser.Scene {
         this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25); // (target, [,roundPixels][,lerpX][,lerpY])
         this.cameras.main.setDeadzone(50, 50);
         this.cameras.main.setZoom(this.SCALE);
+
+
+
+        //first room Key 
+        this.hasKey = false;
+
+        this.physics.add.overlap(my.sprite.player, this.firstKey, (player, tile) => {
+            if (tile.index !== -1) {
+                this.hasKey = true;
+                this.firstKey.removeTileAt(tile.x, tile.y);
+            }
+        }, null, this);
+
+        this.physics.add.collider(my.sprite.player, this.firstKeyHole, (player, tile) => {
+            if (this.hasKey && tile.index !== -1) {
+                tile.setCollision(false);
+                this.firstKeyHole.removeTileAt(tile.x, tile.y);
+            }
+        }, null, this);
+
         
 
     }
@@ -175,5 +179,12 @@ class LockedIn extends Phaser.Scene {
         if(Phaser.Input.Keyboard.JustDown(this.rKey)) {
             this.scene.restart();
         }
+
+
+
+        //first room key
+       
     }
 }
+
+ 
