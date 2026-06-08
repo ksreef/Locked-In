@@ -12,6 +12,9 @@ class Load extends Phaser.Scene {
         // Load tilemap information
         this.load.image("tilemap_tiles", "tilemap_packed.png");                         // Packed tilemap
         this.load.image("tilemap_stone", "stone_packed.png");
+        this.load.image("tilemap_industrial", "industrial_tilemap_packed.png");
+        this.load.image("tilemap_food", "food_tilemap_packed.png");
+        this.load.image("tilemap_farm", "farm_tilemap_packed.png");
         this.load.tilemapTiledJSON("Level-1", "Level-1.tmj");   // Tilemap in JSON
 
         // Load the tilemap as a spritesheet
@@ -21,6 +24,21 @@ class Load extends Phaser.Scene {
         });
 
         this.load.spritesheet("tilemap_sheet_stone", "stone_packed.png", {
+            frameWidth: 18,
+            frameHeight: 18
+        });
+
+        this.load.spritesheet("industrial_tilemap_sheet", "industrial_tilemap_packed.png", {
+            frameWidth: 18,
+            frameHeight: 18
+        });
+
+        this.load.spritesheet("farm_tilemap_sheet", "farm_tilemap_packed.png", {
+            frameWidth: 18,
+            frameHeight: 18
+        });
+
+        this.load.spritesheet("food_tilemap_sheet", "food_tilemap_packed.png", {
             frameWidth: 18,
             frameHeight: 18
         });

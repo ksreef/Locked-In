@@ -23,10 +23,16 @@ class LockedIn extends Phaser.Scene {
         // Second parameter: key for the tilesheet (from this.load.image in Load.js)
         this.tileset = this.map.addTilesetImage("tilemap_packed", "tilemap_tiles");
         this.tileset2 = this.map.addTilesetImage("stone_packed", "tilemap_stone");
+        this.tileset3 = this.map.addTilesetImage("industrial_tilemap_packed", "tilemap_industrial");
+        this.tileset4 = this.map.addTilesetImage("food_tilemap_packed", "tilemap_food");
+        this.tileset5 = this.map.addTilesetImage("farm_tilemap_packed", "tilemap_farm");
 
         // Create a layer
         this.pixelLayer = this.map.createLayer("Blocks", this.tileset2, 0, 0);
         this.groundLayer = this.map.createLayer("Pixel-packed", this.tileset, 0, 0);
+        this.industrialLayer = this.map.createLayer("Industrial", this.tileset3, 0, 0);
+        this.foodLayer = this.map.createLayer("Food", this.tileset4, 0, 0);
+        this.farmLayer = this.map.createLayer("Farm", this.tileset5, 0, 0);
 
         // Make it collidable
         this.groundLayer.setCollisionByProperty({
@@ -34,6 +40,18 @@ class LockedIn extends Phaser.Scene {
         });
 
         this.pixelLayer.setCollisionByProperty({
+            collides: true
+        });
+
+        this.industrialLayer.setCollisionByProperty({
+            collides: true
+        });
+
+        this.foodLayer.setCollisionByProperty({
+            collides: true
+        });
+
+        this.farmLayer.setCollisionByProperty({
             collides: true
         });
 
@@ -62,6 +80,9 @@ class LockedIn extends Phaser.Scene {
         // Enable collision handling
         this.physics.add.collider(my.sprite.player, this.groundLayer);
         this.physics.add.collider(my.sprite.player, this.pixelLayer);
+        this.physics.add.collider(my.sprite.player, this.industrialLayer);
+        this.physics.add.collider(my.sprite.player, this.foodLayer);
+        this.physics.add.collider(my.sprite.player, this.farmLayer);
 
         // TODO: Add coin collision handler
         // Handle collision detection with coins
