@@ -18,7 +18,7 @@ let config = {
         }
     },
     width: 1440,
-    height: 900,
+    height: 1200,
     scene: [Load, LockedIn]
 }
 

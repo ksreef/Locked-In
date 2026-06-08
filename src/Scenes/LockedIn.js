@@ -5,12 +5,12 @@ class LockedIn extends Phaser.Scene {
 
     init() {
         // variables and settings
-        this.ACCELERATION = 400;
-        this.DRAG = 500;    // DRAG < ACCELERATION = icy slide
+        this.ACCELERATION = 300;
+        this.DRAG = 1000;    // DRAG < ACCELERATION = icy slide
         this.physics.world.gravity.y = 1500;
-        this.JUMP_VELOCITY = -600;
+        this.JUMP_VELOCITY = -500;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 3;
+        this.SCALE = 2.5;
     }
 
     create() {
@@ -28,8 +28,6 @@ class LockedIn extends Phaser.Scene {
         this.tileset5 = this.map.addTilesetImage("farm_tilemap_packed", "tilemap_farm");
 
         // Create a layer
-        this.firstKey = this.map.createLayer("key1", this.tileset, 0, 0);
-        this.firstKeyHole = this.map.createLayer("keyhole1", this.tileset, 0, 0);
         this.pixelLayer = this.map.createLayer("Blocks", this.tileset2, 0, 0);
         this.groundLayer = this.map.createLayer("Pixel-packed", this.tileset, 0, 0);
         this.uncollidableindustrialLayer = this.map.createLayer("uncolliable industrial", this.tileset3, 0, 0);
@@ -37,6 +35,22 @@ class LockedIn extends Phaser.Scene {
         this.foodLayer = this.map.createLayer("Food", this.tileset4, 0, 0);
         this.farmLayer = this.map.createLayer("Farm", this.tileset5, 0, 0);
         this.uncollidableLayer = this.map.createLayer("uncollidable pixel-packed", this.tileset, 0, 0);
+        this.uncollidablefarmLayers = this.map.createLayer("uncollidable farm", this.tileset5, 0, 0);
+        this.firstInfoPad = this.map.createLayer("infopad1", this.tileset3, 0, 0);
+
+        //key layers
+        this.firstKey = this.map.createLayer("key1", this.tileset, 0, 0);
+        this.firstKeyHole = this.map.createLayer("keyhole1", this.tileset, 0, 0);
+
+        //first puzzle
+        this.firstRespawnPad = this.map.createLayer("respawnpad1", this.tileset5, 0, 0);
+        this.firstPuzzleKey1 = this.map.createLayer("key-1", this.tileset, 0, 0);
+        this.firstPuzzleKey2 = this.map.createLayer("key-2", this.tileset, 0, 0);
+        this.firstPuzzleKey3 = this.map.createLayer("key-3", this.tileset, 0, 0);
+        this.firstGate = this.map.createLayer("gate1", this.tileset5, 0, 0);
+
+
+
 
         // Make it collidable
         this.groundLayer.setCollisionByProperty({
@@ -63,6 +77,14 @@ class LockedIn extends Phaser.Scene {
             collides: true
         });
 
+        this.firstGate.setCollisionByProperty({
+            collides: true
+        });
+
+        this.firstRespawnPad.setCollisionByProperty({
+            collides: true
+        });
+
         // set up player avatar
         my.sprite.player = this.physics.add.sprite(30, 200, "platformer_characters", "tile_0000.png");
         my.sprite.player.setCollideWorldBounds(true);
@@ -73,6 +95,9 @@ class LockedIn extends Phaser.Scene {
         this.physics.add.collider(my.sprite.player, this.industrialLayer);
         this.physics.add.collider(my.sprite.player, this.foodLayer);
         this.physics.add.collider(my.sprite.player, this.farmLayer);
+        this.physics.add.collider(my.sprite.player, this.firstGate);
+        this.physics.add.collider(my.sprite.player, this.firstRespawnPad);
+
 
         
         // set up Phaser-provided cursor key input
@@ -88,7 +113,8 @@ class LockedIn extends Phaser.Scene {
 
         // TODO: Add movement vfx here
         my.vfx.walking = this.add.particles(0, 0, "kenny-particles", {
-            frame: ['smoke_03.png', 'smoke_09.png'],
+            //frame: ['smoke_03.png', 'smoke_09.png'],
+            frame: 0,
             // TODO: Try: add random: true
             scale: {start: 0.03, end: 0.1},
             // TODO: Try: maxAliveParticles: 8,
@@ -107,6 +133,25 @@ class LockedIn extends Phaser.Scene {
         this.cameras.main.setZoom(this.SCALE);
 
 
+        //info pad text
+        this.infoPadText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            '"The shortest, the tallest, then a fake."',
+            {
+                fontFamily: 'Arial',
+                fontSize: '13px',
+                color: '#ffffff',
+                align: 'center',
+                stroke: '#000000',
+                strokeThickness: 3.8,
+            }
+        ).setOrigin(0.5, 0.5).setScrollFactor(0).setVisible(false);
+
+        this.onInfoPad = false;
+        
+
+
 
         //first room Key 
         this.hasKey = false;
@@ -122,6 +167,49 @@ class LockedIn extends Phaser.Scene {
             if (this.hasKey && tile.index !== -1) {
                 tile.setCollision(false);
                 this.firstKeyHole.removeTileAt(tile.x, tile.y);
+            }
+        }, null, this);
+
+
+        //first puzzle
+        this.puzzleKeyOrder = [];
+        this.puzzleComplete = false;
+        this.puzzleKeyPositions = {};
+
+        const storeKeyPositions = (layer, keyName) => {
+            this.puzzleKeyPositions[keyName] = [];
+            layer.forEachTile(tile => {
+                if (tile.index !== -1) {
+                    this.puzzleKeyPositions[keyName].push({ x: tile.x, y: tile.y, index: tile.index });
+                }
+            });
+        };
+
+        storeKeyPositions(this.firstPuzzleKey1, 'key1');
+        storeKeyPositions(this.firstPuzzleKey2, 'key2');
+        storeKeyPositions(this.firstPuzzleKey3, 'key3');
+
+        this.physics.add.overlap(my.sprite.player, this.firstPuzzleKey1, (player, tile) => {
+            if (tile.index !== -1 && !this.puzzleComplete) {
+                this.puzzleKeyOrder.push(1);
+                this.firstPuzzleKey1.removeTileAt(tile.x, tile.y);
+                this.checkPuzzleState();
+            }
+        }, null, this);
+
+        this.physics.add.overlap(my.sprite.player, this.firstPuzzleKey2, (player, tile) => {
+            if (tile.index !== -1 && !this.puzzleComplete) {
+                this.puzzleKeyOrder.push(2);
+                this.firstPuzzleKey2.removeTileAt(tile.x, tile.y);
+                this.checkPuzzleState();
+            }
+        }, null, this);
+
+        this.physics.add.overlap(my.sprite.player, this.firstPuzzleKey3, (player, tile) => {
+            if (tile.index !== -1 && !this.puzzleComplete) {
+                this.puzzleKeyOrder.push(3);
+                this.firstPuzzleKey3.removeTileAt(tile.x, tile.y);
+                this.checkPuzzleState();
             }
         }, null, this);
 
@@ -180,10 +268,68 @@ class LockedIn extends Phaser.Scene {
             this.scene.restart();
         }
 
+        //info pad
+        const playerTileX = this.firstInfoPad.worldToTileX(my.sprite.player.x);
+        const playerTileY = this.firstInfoPad.worldToTileY(my.sprite.player.y);
+        const infoTile = this.firstInfoPad.getTileAt(playerTileX, playerTileY);
+        this.infoPadText.setVisible(infoTile !== null && infoTile.index !== -1);
+        
+    }
 
+    checkPuzzleState() {    
+        const order = this.puzzleKeyOrder;
+        const totalKeys = 3;
 
-        //first room key
-       
+        const correctOrder = [1, 2, 3];
+        for (let i = 0; i < order.length; i++) {
+            if (order[i] !== correctOrder[i]) {
+                break;
+            }
+        }
+
+        if (order.length === totalKeys) {
+            const isCorrect = order[0] === 1 && order[1] === 2 && order[2] === 3;
+
+            if (isCorrect) {
+                this.puzzleComplete = true;
+                this.firstGate.forEachTile(tile => {
+                    if (tile.index !== -1) {
+                        tile.setCollision(false);
+                    }
+                });
+            } else {
+                this.puzzleKeyOrder = [];
+
+                const respawn = (layer, keyName) => {
+                    this.puzzleKeyPositions[keyName].forEach(({ x, y, index }) => {
+                        layer.putTileAt(index, x, y);
+                    });
+                };
+
+                respawn(this.firstPuzzleKey1, 'key1');
+                respawn(this.firstPuzzleKey2, 'key2');
+                respawn(this.firstPuzzleKey3, 'key3');
+
+                let padLeftX = null;
+                let padY = null;
+                this.firstRespawnPad.forEachTile(tile => {
+                    if (tile.index !== -1) {
+                        const worldX = this.firstRespawnPad.tileToWorldX(tile.x);
+                        const worldY = this.firstRespawnPad.tileToWorldY(tile.y);
+                        if (padLeftX === null || worldX < padLeftX) {
+                            padLeftX = worldX;
+                            padY = worldY;
+                        }
+                    }
+                });
+
+                if (padLeftX !== null) {
+                    my.sprite.player.setPosition(padLeftX - my.sprite.player.displayWidth, padY);
+                    my.sprite.player.setVelocity(0, 0);
+                    my.sprite.player.setAcceleration(0, 0);
+                }
+            }
+        }
     }
 }
 
