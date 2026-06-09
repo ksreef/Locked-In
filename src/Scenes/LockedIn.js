@@ -207,6 +207,12 @@ class LockedIn extends Phaser.Scene {
             frame: 86
         });
 
+        this.signs3 = this.map.createFromObjects("Objects", {
+            name: "question_3",
+            key: "tilemap_sheet",
+            frame: 86
+        });
+
         this.wrong = this.map.createFromObjects("Objects", {
             name: "wrong",
             key: "food_tilemap_sheet",
@@ -231,6 +237,7 @@ class LockedIn extends Phaser.Scene {
         this.questionMessages = {
             'question_1': 'How many keys have you correctly collected?',
             'question_2': 'How many lolipops were in the last room?',
+            'question_3': 'Which question is this?',
         };
     }
 
@@ -255,6 +262,16 @@ class LockedIn extends Phaser.Scene {
             );
             if (dist < checkDist) {
                 this.activeQuestion = 'question_2';
+            }
+        });
+
+        this.signs3.forEach(sign => {
+            const dist = Phaser.Math.Distance.Between(
+                my.sprite.player.x, my.sprite.player.y,
+                sign.x, sign.y
+            );
+            if (dist < checkDist) {
+                this.activeQuestion = 'question_3';
             }
         });
 
