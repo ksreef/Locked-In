@@ -1,5 +1,5 @@
 {
-    "activeFile": "Level-1.tmx",
+    "activeFile": "",
     "expandedProjectPaths": [
     ],
     "fileStates": {
@@ -10,13 +10,43 @@
         "#colored-transparent_packed": {
             "scaleInDock": 1
         },
-        "Level-1.tmx": {
-            "scale": 1.5,
+        "Level-1.tmj": {
+            "scale": 0.33,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 149.33333333333331,
-                "y": 180.33333333333334
+                "x": 451.51515151515156,
+                "y": 1019.6969696969696
             }
+        },
+        "Level-1.tmj#farm_tilemap_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmj#food_tilemap_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmj#industrial_tilemap_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmj#stone_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmj#tilemap_packed": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "Level-1.tmx": {
+            "scale": 0.33,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 457.5757575757576,
+                "y": 795.4545454545454
+            }
+        },
+        "Level-1.tmx#farm_tilemap_packed": {
+            "scaleInDock": 1
+        },
+        "Level-1.tmx#food_tilemap_packed": {
+            "scaleInDock": 1
         },
         "Level-1.tmx#industrial_tilemap_packed": {
             "scaleInDock": 1
@@ -35,12 +65,12 @@
     "map.tileHeight": 18,
     "map.tileWidth": 18,
     "openFiles": [
-        "Level-1.tmx"
     ],
     "project": "Level-1.tiled-project",
     "property.type": "bool",
     "recentFiles": [
-        "Level-1.tmx"
+        "Level-1.tmx",
+        "Level-1.tmj"
     ],
     "tileset.embedInMap": true,
     "tileset.tileSize": {
