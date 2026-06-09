@@ -12,7 +12,22 @@ class LockedIn extends Phaser.Scene {
         this.SCALE = 2.5;
     }
 
+    preload() {
+        //audio
+        this.load.audio("enemyClose", "assets/thrusterFire_002.ogg");
+        this.load.audio("jumpScare", "assets/spaceEngineLarge_002.ogg");
+
+        //puzzle 3 kenny
+        this.load.image("monster1", "assets/tile_0341.png");
+        this.load.image("monster2", "assets/tile_0361.png");    
+        this.load.image("monster3", "assets/tile_0381.png");
+        this.load.image("avatar", "assets/tile_0100.png");
+    }
+
+
     create() {
+        this.pKey = this.input.keyboard.addKey('P');
+
         this.map = this.add.tilemap("Level-1", 18, 18, 100, 30);
 
         this.tileset = this.map.addTilesetImage("tilemap_packed", "tilemap_tiles");
@@ -42,6 +57,11 @@ class LockedIn extends Phaser.Scene {
         this.firstPuzzleKey3 = this.map.createLayer("key-3", this.tileset, 0, 0);
         this.firstGate = this.map.createLayer("gate1", this.tileset5, 0, 0);
 
+        //third puzzle
+        this.thirdPuzzleBegin = this.map.createLayer("ThirdPuzzleStart", this.tileset3, 0, 0);
+        this.thirdPuzzleBegin.setCollisionByExclusion([-1]);
+        this.lastRespawnPad = this.map.createLayer("respawnPad2", this.tileset3, 0, 0);
+
         // collision
         this.groundLayer.setCollisionByProperty({ collides: true });
         this.pixelLayer.setCollisionByProperty({ collides: true });
@@ -51,6 +71,7 @@ class LockedIn extends Phaser.Scene {
         this.firstKeyHole.setCollisionByProperty({ collides: true });
         this.firstGate.setCollisionByProperty({ collides: true });
         this.firstRespawnPad.setCollisionByProperty({ collides: true });
+        this.lastRespawnPad.setCollisionByProperty({ collides: true });
 
         // one way platforms
         const setupOneWay = (layer) => {
@@ -89,6 +110,7 @@ class LockedIn extends Phaser.Scene {
         this.physics.add.collider(my.sprite.player, this.farmLayer, null, oneWayCallback, this);
         this.physics.add.collider(my.sprite.player, this.firstGate);
         this.physics.add.collider(my.sprite.player, this.firstRespawnPad);
+        this.physics.add.collider(my.sprite.player, this.lastRespawnPad);
 
         this.uncollidableLayer.setCollision([]);
         this.uncollidablefarmLayers.setCollision([]);
@@ -194,6 +216,18 @@ class LockedIn extends Phaser.Scene {
             }
         }, null, this);
 
+        //third puzzle stuff
+        this.bKey = this.input.keyboard.addKey('B');
+
+        this.fnafMode = false;
+        this.fnafStarted = false;
+        this.fnafCooldown = false;
+
+        this.thirdPuzzleCheckpoint = {
+            x: 0,
+            y: 0
+        };
+
         //objects
         this.signs = this.map.createFromObjects("Objects", {
             name: "question_1",
@@ -242,6 +276,29 @@ class LockedIn extends Phaser.Scene {
     }
 
     update() {
+
+        if (!this.fnafStarted && !this.fnafCooldown) {
+            const tileX = this.thirdPuzzleBegin.worldToTileX(my.sprite.player.x);
+            const tileY = this.thirdPuzzleBegin.worldToTileY(my.sprite.player.y);
+
+            const tile = this.thirdPuzzleBegin.getTileAt(tileX, tileY);
+
+            if (tile) {
+                this.startThirdPuzzle();
+            }
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+            this.startThirdPuzzle();
+        }
+
+        //third puzzle
+        if (this.fnafMode) {
+            this.updateThirdPuzzle();
+            return;
+        }
+
+
         this.activeQuestion = null;
         const checkDist = 20;
 
@@ -409,6 +466,302 @@ class LockedIn extends Phaser.Scene {
                 }
             }
         }
+    }
+
+    startThirdPuzzle() {
+        console.log("FNAF STARTED");
+        this.fnafMode = true;
+        this.fnafStarted = true;
+        this.fnafJumpscarePending = false;
+        
+        this.thirdPuzzleCheckpoint.x = my.sprite.player.x;
+        this.thirdPuzzleCheckpoint.y = my.sprite.player.y;
+
+        my.sprite.player.setVelocity(0, 0);
+        my.sprite.player.setAcceleration(0, 0); 
+        my.sprite.player.body.enable = false;
+
+        this.cameras.main.stopFollow();
+        this.cameras.main.setZoom(1);
+        this.cameras.main.removeBounds();   
+        this.cameras.main.setScroll(0, 0);
+
+        const cx = this.cameras.main.width / 2;
+        const cy = this.cameras.main.height / 2;
+
+        this.fnafTimer = 30000;
+
+        this.blackScreen = this.add.rectangle(
+            0,
+            0,
+            5000,
+            5000,
+            0x000000
+        )
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(500);
+
+        this.fnafText = this.add.text(
+            cx,
+            20,
+            "SURVIVE",
+            {
+                fontSize: "24px",
+                color: "#ffffff"
+            }
+        )
+        .setScrollFactor(0)
+        .setDepth(501)
+        .setOrigin(0.5, 0);
+
+        this.fnafPlayer = this.add.sprite(cx, cy, "avatar")
+        .setScale(6).setScrollFactor(0).setDepth(502);
+
+        this.fnafControls = this.add.text(
+            cx,
+            cy + 80,
+            "  Z, X, C — FLASHLIGHTS\n\n     B — SEND THEM AWAY",
+            {
+                fontSize: "20px",
+                color: "#aaaaaa",
+                align: "center"
+            }
+        ).setScrollFactor(0).setDepth(502).setOrigin(0.5, 0);
+
+        this.monsters = [];
+        this.spawnTimer = 3000;
+        this.spawnInterval = Phaser.Math.Between(4000, 8000);
+
+        this.shieldSprite = this.add.rectangle(0, 0, 500, 60, 0xffffff)
+        .setScrollFactor(0).setDepth(503).setVisible(false);
+
+        this.zKey = this.input.keyboard.addKey('Z');
+        this.xKey = this.input.keyboard.addKey('X');
+        this.cKey = this.input.keyboard.addKey('C');
+
+        this.flashlightL = this.add.circle(cx - 160, cy - 140, 100, 0xffffff, 0.15)
+        .setScrollFactor(0).setDepth(503).setVisible(false);
+
+        this.flashlightM = this.add.circle(cx, cy - 140, 100, 0xffffff, 0.15)
+        .setScrollFactor(0).setDepth(503).setVisible(false);
+
+        this.flashlightR = this.add.circle(cx + 160, cy - 140, 100, 0xffffff, 0.15)
+        .setScrollFactor(0).setDepth(503).setVisible(false);
+
+    }
+
+
+    updateThirdPuzzle() {
+        if (this.fnafJumpscarePending) return;
+
+        this.fnafTimer -= this.game.loop.delta;
+
+        this.fnafText.setText(
+            "Survive: " +
+            Math.ceil(this.fnafTimer / 1000) + "s"
+        );
+
+        if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
+            const cx = this.cameras.main.width / 2;
+            const cy = this.cameras.main.height / 2;
+
+            this.shieldSprite.setPosition(cx, cy - 80).setVisible(true);
+
+            this.time.delayedCall(400, () => {
+                if (this.shieldSprite) this.shieldSprite.setVisible(false);
+            });
+
+            this.monsters.forEach(enemy => {
+                if (enemy.dead) return;
+                if (enemy.sprite.y >= enemy.targetY - 100) {
+                    enemy.dead = true;
+                    enemy.sprite.setVisible(false);
+                    if (enemy.closeSound && enemy.closeSound.isPlaying) enemy.closeSound.stop();
+                }
+            });
+        }
+
+        this.monsters.forEach((enemy, index) => {
+            if (enemy.dead) return;
+
+            enemy.distance -= 0.15;
+
+            if (enemy.sprite.y < enemy.targetY) {
+                enemy.sprite.y += 0.8;
+            }
+
+            const flashlights = [this.flashlightL, this.flashlightM, this.flashlightR];
+            const myFlashlight = flashlights[enemy.flashlightIndex !== undefined ? enemy.flashlightIndex : index];
+            const inRange = enemy.sprite.y >= enemy.targetY - 200;
+            const flashOn = myFlashlight && myFlashlight.visible;
+            enemy.sprite.setAlpha(flashOn && inRange ? 1 : 0);
+
+            const scale = Phaser.Math.Clamp(4 + (400 - enemy.distance) / 80, 4, 10);
+            enemy.sprite.setScale(scale);
+
+            if (flashOn && inRange && !enemy.warned) {
+                enemy.warned = true;
+                enemy.closeSound = this.sound.add("enemyClose");
+                enemy.closeSound.play();
+            }
+
+            if (enemy.sprite.y >= enemy.targetY && !this.fnafJumpscarePending && !enemy.dead) {
+                this.triggerJumpScare(enemy);
+            }
+        });
+
+        if (Phaser.Input.Keyboard.JustDown(this.zKey)) {
+            this.flashlightL.setVisible(true);
+            this.time.delayedCall(400, () => { if (this.flashlightL) this.flashlightL.setVisible(false); });
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.xKey)) {
+            this.flashlightM.setVisible(true);
+            this.time.delayedCall(400, () => { if (this.flashlightM) this.flashlightM.setVisible(false); });
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
+            this.flashlightR.setVisible(true);
+            this.time.delayedCall(400, () => { if (this.flashlightR) this.flashlightR.setVisible(false); });
+        }
+
+        this.spawnTimer += this.game.loop.delta;
+        if (this.spawnTimer >= this.spawnInterval) {
+            this.spawnTimer = 0;
+            this.spawnInterval = Phaser.Math.Between(4000, 8000);
+
+            const cx = this.cameras.main.width / 2;
+            const cy = this.cameras.main.height / 2;
+            const keys = ["monster1", "monster2", "monster3"];
+            const slots = [cx - 160, cx, cx + 160];
+            const flashlights = [this.flashlightL, this.flashlightM, this.flashlightR];
+
+            const randomIndex = Phaser.Math.Between(0, 2);
+            const key = keys[randomIndex];
+            const x = slots[randomIndex];
+
+            const newEnemy = {
+                sprite: this.add.image(x, 200, key)
+                .setScale(6)
+                .setScrollFactor(0)
+                .setDepth(501)
+                .setAlpha(0),
+
+                targetY: cy - 80,
+                distance: 900,
+                warned: false,
+                dead: false,
+                flashlightIndex: randomIndex,
+            };
+
+            this.monsters.push(newEnemy);
+        }
+
+        if (this.fnafTimer <= 0) {
+            this.endThirdPuzzle();
+        }
+
+        if (this.fnafTimer <= 0) {
+            this.endThirdPuzzle();
+        }
+    }
+
+
+    triggerJumpScare(enemy) {
+        this.fnafJumpscarePending = true;
+        enemy.dead = true;
+
+        this.cameras.main.shake(500);
+        enemy.sprite.setScale(20).setDepth(503);    
+        enemy.sprite.setAlpha(1);
+
+        const scareSound = this.sound.add("jumpScare");
+        scareSound.play();
+
+        setTimeout(() => {
+            if (this.blackScreen) this.blackScreen.destroy();
+            if (this.fnafText) this.fnafText.destroy();
+            if (this.fnafPlayer) this.fnafPlayer.destroy();
+            if (this.shieldSprite) this.shieldSprite.destroy();
+            if (this.flashlightL) this.flashlightL.destroy();
+            if (this.flashlightM) this.flashlightM.destroy();
+            if (this.flashlightR) this.flashlightR.destroy();
+            if (this.fnafControls) this.fnafControls.destroy();
+
+            if (enemy.sprite && enemy.sprite.active) enemy.sprite.destroy();
+
+            this.monsters.forEach(m => {
+                if (m.sprite && m.sprite.active) m.sprite.destroy();
+            });
+            this.monsters = [];
+
+            this.fnafMode = false;
+            this.fnafJumpscarePending = false;
+            my.sprite.player.body.enable = true;
+            this.cameras.main.setZoom(this.SCALE);
+            this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+
+            let padX = null;
+            let padY = null;
+            this.lastRespawnPad.forEachTile(tile => {
+                if (tile.index !== -1 && padX === null) {
+                    padX = this.lastRespawnPad.tileToWorldX(tile.x);
+                    padY = this.lastRespawnPad.tileToWorldY(tile.y);
+                }
+            });
+
+            if (padX !== null) {
+                my.sprite.player.setPosition(padX, padY - my.sprite.player.displayHeight);
+                this.cameras.main.centerOn(padX, padY);
+            }
+
+            my.sprite.player.setVelocity(0, 0);
+            my.sprite.player.setAcceleration(0, 0);
+            this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25);
+
+            this.fnafStarted = true;
+            this.fnafCooldown = true;
+            setTimeout(() => {
+                this.fnafCooldown = false;
+                this.fnafStarted = false;
+            }, 1000);
+        }, 800);
+    }
+
+    endThirdPuzzle() {
+        this.fnafMode = false;
+        this.fnafJumpscarePending = false;
+
+        if (this.blackScreen) this.blackScreen.destroy();
+        if (this.fnafText) this.fnafText.destroy();
+        if (this.fnafPlayer) this.fnafPlayer.destroy();
+        if (this.shieldSprite) this.shieldSprite.destroy();
+        if (this.flashlightL) this.flashlightL.destroy();
+        if (this.flashlightM) this.flashlightM.destroy();
+        if (this.flashlightR) this.flashlightR.destroy();
+        if (this.fnafControls) this.fnafControls.destroy();
+
+        this.monsters.forEach(enemy => {
+            if (enemy.sprite && enemy.sprite.active) {
+                enemy.sprite.destroy();
+            }
+        });
+        this.monsters = [];
+
+        my.sprite.player.body.enable = true;
+        this.cameras.main.setZoom(this.SCALE);
+        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+        this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25);
+
+        this.cameras.main.centerOn(
+            my.sprite.player.x,
+            my.sprite.player.y
+        );
+    }
+
+
+    endThirdPuzzleFail() {
     }
 }
  
