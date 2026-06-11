@@ -17,6 +17,8 @@ class Load extends Phaser.Scene {
         this.load.image("tilemap_farm", "farm_tilemap_packed.png");
         this.load.tilemapTiledJSON("Level-1", "Level-1.tmj");   // Tilemap in JSON
 
+        this.load.audio("jump", "laserSmall_000.ogg")
+
         // Load the tilemap as a spritesheet
         this.load.spritesheet("tilemap_sheet", "tilemap_packed.png", {
             frameWidth: 18,

@@ -406,6 +406,7 @@ class LockedIn extends Phaser.Scene {
         }
         if (my.sprite.player.body.blocked.down && Phaser.Input.Keyboard.JustDown(cursors.up)) {
             my.sprite.player.body.setVelocityY(this.JUMP_VELOCITY);
+            this.sound.play("jump");
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
@@ -523,7 +524,7 @@ class LockedIn extends Phaser.Scene {
             cy + 80,
             "  Z, X, C — FLASHLIGHTS\n\n     B — SEND THEM AWAY",
             {
-                fontSize: "20px",
+                fontSize: "40px",
                 color: "#aaaaaa",
                 align: "center"
             }
