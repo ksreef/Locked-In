@@ -19,7 +19,7 @@ let config = {
     },
     width: 1440,
     height: 1200,
-    scene: [Load, LockedIn]
+    scene: [Load, Title, LockedIn, Win]
 }
 
 var cursors;

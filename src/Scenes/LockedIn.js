@@ -259,6 +259,18 @@ class LockedIn extends Phaser.Scene {
             frame: 31
         });
 
+        this.win = this.map.createFromObjects("Objects", {
+            name: "win",
+            key: "tilemap_sheet",
+            frame: 130
+        });
+
+        this.winT = this.map.createFromObjects("Objects", {
+            name: "winT",
+            key: "tilemap_sheet",
+            frame: 110
+        });
+
         this.questionText = this.add.text(0, 0, '', {
             fontFamily: 'Arial',
             fontSize: '12px',
@@ -344,6 +356,16 @@ class LockedIn extends Phaser.Scene {
             }
         });
 
+        this.win.forEach(sign => {
+            const dist = Phaser.Math.Distance.Between(
+                my.sprite.player.x, my.sprite.player.y,
+                sign.x, sign.y
+            );
+            if (dist < checkDist) {
+                this.gameWin();
+            }
+        });
+
         if (this.activeQuestion && this.questionMessages[this.activeQuestion]) {
             this.questionText.setText(this.questionMessages[this.activeQuestion]);
             this.questionText.setPosition(
@@ -356,7 +378,7 @@ class LockedIn extends Phaser.Scene {
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.hKey)) {
-            my.sprite.player.setPosition(1431, 875);
+            my.sprite.player.setPosition(4000, 875);
         }
 
         if (this.activeQuestion && this.questionMessages[this.activeQuestion]) {
@@ -763,6 +785,14 @@ class LockedIn extends Phaser.Scene {
 
 
     endThirdPuzzleFail() {
+    }
+
+    gameWin() {
+        my.sprite.player.setActive(false).setVisible(false);
+        my.sprite.player.body.enable = false;
+        this.time.delayedCall(500, () => {
+            this.scene.start("winScene");
+        });    
     }
 }
  
