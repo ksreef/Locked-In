@@ -17,6 +17,11 @@ class LockedIn extends Phaser.Scene {
         this.load.audio("enemyClose", "assets/thrusterFire_002.ogg");
         this.load.audio("jumpScare", "assets/spaceEngineLarge_002.ogg");
 
+        this.load.audio("batteryPickUp", "assets/handleCoins.ogg");
+        this.load.audio("keyPickUp", "assets/handleCoins2.ogg");
+        this.load.audio("flashlightOn", "assets/metalClick.ogg");
+        this.load.audio("doorClose", "assets/doorClose_1.ogg");
+
         //puzzle 3 kenny
         this.load.image("monster1", "assets/tile_0341.png");
         this.load.image("monster2", "assets/tile_0361.png");    
@@ -45,6 +50,14 @@ class LockedIn extends Phaser.Scene {
         this.uncollidableLayer = this.map.createLayer("uncollidable pixel-packed", this.tileset, 0, 0);
         this.uncollidablefarmLayers = this.map.createLayer("uncollidable farm", this.tileset5, 0, 0);
         this.firstInfoPad = this.map.createLayer("infopad1", this.tileset3, 0, 0);
+        this.invisibleLayer = this.map.createLayer("invis food", this.tileset4, 0, 0);
+        this.invisibleLayer.setAlpha(0);
+
+        //currency-battery
+        this.batteryMoney = this.map.createLayer("battery", this.tileset, 0, 0);
+        this.batteryMoney.setCollisionByExclusion([-1]);
+        this.playerBattery = 0;
+        
 
         // key layers
         this.firstKey = this.map.createLayer("key1", this.tileset, 0, 0);
@@ -72,6 +85,7 @@ class LockedIn extends Phaser.Scene {
         this.firstGate.setCollisionByProperty({ collides: true });
         this.firstRespawnPad.setCollisionByProperty({ collides: true });
         this.lastRespawnPad.setCollisionByProperty({ collides: true });
+        this.invisibleLayer.setCollisionByProperty({ collides: true });
 
         // one way platforms
         const setupOneWay = (layer) => {
@@ -111,10 +125,21 @@ class LockedIn extends Phaser.Scene {
         this.physics.add.collider(my.sprite.player, this.firstGate);
         this.physics.add.collider(my.sprite.player, this.firstRespawnPad);
         this.physics.add.collider(my.sprite.player, this.lastRespawnPad);
+        this.physics.add.collider(my.sprite.player, this.invisibleLayer);
 
         this.uncollidableLayer.setCollision([]);
         this.uncollidablefarmLayers.setCollision([]);
         this.uncollidableindustrialLayer.setCollision([]);
+
+        
+        //battery currency/inventory
+        this.physics.add.overlap(my.sprite.player, this.batteryMoney, (player, tile) => {
+            if (tile.index !== -1) {
+                this.playerBattery += 2;
+                this.batteryMoney.removeTileAt(tile.x, tile.y);
+                this.sound.play("batteryPickUp");
+            }
+        }, null, this);
 
         // input
         cursors = this.input.keyboard.createCursorKeys();
@@ -164,6 +189,7 @@ class LockedIn extends Phaser.Scene {
             if (tile.index !== -1) {
                 this.hasKey = true;
                 this.firstKey.removeTileAt(tile.x, tile.y);
+                this.sound.play("keyPickUp");
             }
         }, null, this);
 
@@ -196,6 +222,7 @@ class LockedIn extends Phaser.Scene {
             if (tile.index !== -1 && !this.puzzleComplete) {
                 this.puzzleKeyOrder.push(1);
                 this.firstPuzzleKey1.removeTileAt(tile.x, tile.y);
+                this.sound.play("keyPickUp");
                 this.checkPuzzleState();
             }
         }, null, this);
@@ -204,6 +231,7 @@ class LockedIn extends Phaser.Scene {
             if (tile.index !== -1 && !this.puzzleComplete) {
                 this.puzzleKeyOrder.push(2);
                 this.firstPuzzleKey2.removeTileAt(tile.x, tile.y);
+                this.sound.play("keyPickUp");
                 this.checkPuzzleState();
             }
         }, null, this);
@@ -212,6 +240,7 @@ class LockedIn extends Phaser.Scene {
             if (tile.index !== -1 && !this.puzzleComplete) {
                 this.puzzleKeyOrder.push(3);
                 this.firstPuzzleKey3.removeTileAt(tile.x, tile.y);
+                this.sound.play("keyPickUp");
                 this.checkPuzzleState();
             }
         }, null, this);
@@ -572,6 +601,33 @@ class LockedIn extends Phaser.Scene {
         this.flashlightR = this.add.circle(cx + 160, cy - 140, 100, 0xffffff, 0.15)
         .setScrollFactor(0).setDepth(503).setVisible(false);
 
+        //battery system
+        this.fnafBattery = this.playerBattery;
+        this.fnafBatteryMax = this.playerBattery;
+
+        this.batteryText = this.add.text(
+            cx,
+            50,
+            `🔋 Battery: ${this.fnafBattery}`,
+            {
+                fontSize: "20px",
+                color: "#00ff00",
+                align: "center",
+                stroke: "#000000",
+                strokeThickness: 3,
+            }
+        ).setScrollFactor(0).setDepth(502).setOrigin(0.5, 0);
+
+
+    }
+
+    usesBattery() {
+        if (this.fnafBattery <= 0) return false;
+        this.fnafBattery--;
+        const pct = this.fnafBatteryMax > 0 ? this.fnafBattery / this.fnafBatteryMax : 0;
+        const color = pct > 0.5 ? "#00ff00" : pct > 0.2 ? "#ffff00" : "#ff0000";
+        this.batteryText.setText(`🔋 Battery: ${this.fnafBattery}`).setColor(color);
+        return true;
     }
 
 
@@ -586,23 +642,26 @@ class LockedIn extends Phaser.Scene {
         );
 
         if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
-            const cx = this.cameras.main.width / 2;
-            const cy = this.cameras.main.height / 2;
+            if (this.usesBattery()) {  
+                this.sound.play("doorClose");
+                const cx = this.cameras.main.width / 2;
+                const cy = this.cameras.main.height / 2;
 
-            this.shieldSprite.setPosition(cx, cy - 80).setVisible(true);
+                this.shieldSprite.setPosition(cx, cy - 80).setVisible(true);
 
-            this.time.delayedCall(400, () => {
-                if (this.shieldSprite) this.shieldSprite.setVisible(false);
-            });
+                this.time.delayedCall(400, () => {
+                    if (this.shieldSprite) this.shieldSprite.setVisible(false);
+                });
 
-            this.monsters.forEach(enemy => {
-                if (enemy.dead) return;
-                if (enemy.sprite.y >= enemy.targetY - 100) {
-                    enemy.dead = true;
-                    enemy.sprite.setVisible(false);
-                    if (enemy.closeSound && enemy.closeSound.isPlaying) enemy.closeSound.stop();
-                }
-            });
+                this.monsters.forEach(enemy => {
+                    if (enemy.dead) return;
+                    if (enemy.sprite.y >= enemy.targetY - 100) {
+                        enemy.dead = true;
+                        enemy.sprite.setVisible(false);
+                        if (enemy.closeSound && enemy.closeSound.isPlaying) enemy.closeSound.stop();
+                    }
+                });
+            }
         }
 
         this.monsters.forEach((enemy, index) => {
@@ -635,18 +694,27 @@ class LockedIn extends Phaser.Scene {
         });
 
         if (Phaser.Input.Keyboard.JustDown(this.zKey)) {
-            this.flashlightL.setVisible(true);
-            this.time.delayedCall(400, () => { if (this.flashlightL) this.flashlightL.setVisible(false); });
+            if (this.usesBattery()) {
+                this.sound.play("flashlightOn");
+                this.flashlightL.setVisible(true);
+                this.time.delayedCall(400, () => { if (this.flashlightL) this.flashlightL.setVisible(false); });
+            }
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.xKey)) {
-            this.flashlightM.setVisible(true);
-            this.time.delayedCall(400, () => { if (this.flashlightM) this.flashlightM.setVisible(false); });
+            if (this.usesBattery()) {
+                this.sound.play("flashlightOn");
+                this.flashlightM.setVisible(true);
+                this.time.delayedCall(400, () => { if (this.flashlightM) this.flashlightM.setVisible(false); });
+            }
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
-            this.flashlightR.setVisible(true);
-            this.time.delayedCall(400, () => { if (this.flashlightR) this.flashlightR.setVisible(false); });
+            if (this.usesBattery()) {
+                this.sound.play("flashlightOn");
+                this.flashlightR.setVisible(true);
+                this.time.delayedCall(400, () => { if (this.flashlightR) this.flashlightR.setVisible(false); });
+            }
         }
 
         this.spawnTimer += this.game.loop.delta;
@@ -684,10 +752,6 @@ class LockedIn extends Phaser.Scene {
         if (this.fnafTimer <= 0) {
             this.endThirdPuzzle();
         }
-
-        if (this.fnafTimer <= 0) {
-            this.endThirdPuzzle();
-        }
     }
 
 
@@ -703,6 +767,10 @@ class LockedIn extends Phaser.Scene {
         scareSound.play();
 
         setTimeout(() => {
+            //restore battery after fnaf loss
+            this.fnafBattery = this.fnafBatteryMax;
+            this.playerBattery = this.fnafBatteryMax;
+
             if (this.blackScreen) this.blackScreen.destroy();
             if (this.fnafText) this.fnafText.destroy();
             if (this.fnafPlayer) this.fnafPlayer.destroy();
@@ -711,6 +779,7 @@ class LockedIn extends Phaser.Scene {
             if (this.flashlightM) this.flashlightM.destroy();
             if (this.flashlightR) this.flashlightR.destroy();
             if (this.fnafControls) this.fnafControls.destroy();
+            if (this.batteryText) this.batteryText.destroy();
 
             if (enemy.sprite && enemy.sprite.active) enemy.sprite.destroy();
 
@@ -755,6 +824,7 @@ class LockedIn extends Phaser.Scene {
     endThirdPuzzle() {
         this.fnafMode = false;
         this.fnafJumpscarePending = false;
+        this.fnafStarted = true;
 
         if (this.blackScreen) this.blackScreen.destroy();
         if (this.fnafText) this.fnafText.destroy();
@@ -764,6 +834,7 @@ class LockedIn extends Phaser.Scene {
         if (this.flashlightM) this.flashlightM.destroy();
         if (this.flashlightR) this.flashlightR.destroy();
         if (this.fnafControls) this.fnafControls.destroy();
+        if (this.batteryText) this.batteryText.destroy();
 
         this.monsters.forEach(enemy => {
             if (enemy.sprite && enemy.sprite.active) {
