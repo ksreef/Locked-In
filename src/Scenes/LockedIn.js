@@ -31,7 +31,6 @@ class LockedIn extends Phaser.Scene {
 
 
     create() {
-        this.pKey = this.input.keyboard.addKey('P');
 
         this.map = this.add.tilemap("Level-1", 18, 18, 100, 30);
 
@@ -144,7 +143,6 @@ class LockedIn extends Phaser.Scene {
         // input
         cursors = this.input.keyboard.createCursorKeys();
         this.rKey = this.input.keyboard.addKey('R');
-        this.hKey = this.input.keyboard.addKey('H');
         this.input.keyboard.on('keydown-D', () => {
             this.physics.world.drawDebug = this.physics.world.drawDebug ? false : true;
             this.physics.world.debugGraphic.clear();
@@ -329,10 +327,6 @@ class LockedIn extends Phaser.Scene {
             }
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
-            this.startThirdPuzzle();
-        }
-
         //third puzzle
         if (this.fnafMode) {
             this.updateThirdPuzzle();
@@ -404,10 +398,6 @@ class LockedIn extends Phaser.Scene {
             this.questionText.setVisible(true);
         } else {
             this.questionText.setVisible(false);
-        }
-
-        if (Phaser.Input.Keyboard.JustDown(this.hKey)) {
-            my.sprite.player.setPosition(4000, 875);
         }
 
         if (this.activeQuestion && this.questionMessages[this.activeQuestion]) {
@@ -655,7 +645,8 @@ class LockedIn extends Phaser.Scene {
 
                 this.monsters.forEach(enemy => {
                     if (enemy.dead) return;
-                    if (enemy.sprite.y >= enemy.targetY - 100) {
+                    const recentlySeen = (this.time.now - enemy.lastVisible) < 2000;
+                    if (enemy.sprite.y >= enemy.targetY - 100 && recentlySeen) {
                         enemy.dead = true;
                         enemy.sprite.setVisible(false);
                         if (enemy.closeSound && enemy.closeSound.isPlaying) enemy.closeSound.stop();
@@ -682,11 +673,14 @@ class LockedIn extends Phaser.Scene {
             const scale = Phaser.Math.Clamp(4 + (400 - enemy.distance) / 80, 4, 10);
             enemy.sprite.setScale(scale);
 
-            if (flashOn && inRange && !enemy.warned) {
+            if (flashOn && inRange) {
+                enemy.lastVisible = this.time.now;
+                if (!enemy.warned) {
                 enemy.warned = true;
                 enemy.closeSound = this.sound.add("enemyClose");
                 enemy.closeSound.play();
             }
+        }
 
             if (enemy.sprite.y >= enemy.targetY && !this.fnafJumpscarePending && !enemy.dead) {
                 this.triggerJumpScare(enemy);
@@ -744,6 +738,7 @@ class LockedIn extends Phaser.Scene {
                 warned: false,
                 dead: false,
                 flashlightIndex: randomIndex,
+                lastVisible: -Infinity,
             };
 
             this.monsters.push(newEnemy);
